@@ -1399,6 +1399,13 @@ void CollectionWatcher::IncrementalScanCheck() {
 
 void CollectionWatcher::IncrementalScanNow() { PerformScan(true, false); }
 
+void CollectionWatcher::ScanForPlaylistAsync(const int playlist_id) {
+  QMetaObject::invokeMethod(this, [this, playlist_id]() {
+    PerformScan(true, true);
+    Q_EMIT PlaylistScanFinished(playlist_id, !stop_or_abort_requested());
+  }, Qt::QueuedConnection);
+}
+
 void CollectionWatcher::FullScanNow() { PerformScan(false, true); }
 
 void CollectionWatcher::PerformScan(const bool incremental, const bool ignore_mtimes) {

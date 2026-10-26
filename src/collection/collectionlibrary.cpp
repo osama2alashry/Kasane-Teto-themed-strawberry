@@ -125,6 +125,11 @@ void CollectionLibrary::Init() {
   QObject::connect(watcher_, &CollectionWatcher::SubdirsDeleted, &*backend_, &CollectionBackend::DeleteSubdirs);
   QObject::connect(watcher_, &CollectionWatcher::CompilationsNeedUpdating, &*backend_, &CollectionBackend::CompilationsNeedUpdating);
   QObject::connect(watcher_, &CollectionWatcher::UpdateLastSeen, &*backend_, &CollectionBackend::UpdateLastSeen);
+  // Run behind the scan's database updates on the backend thread, so newly
+  // discovered songs are committed before the playlist snapshot is read.
+  QObject::connect(watcher_, &CollectionWatcher::PlaylistScanFinished, &*backend_, [this](const int playlist_id, const bool completed) {
+    Q_EMIT PlaylistSongsReady(completed ? backend_->GetAllSongs() : SongList(), playlist_id, completed);
+  });
 
   // This will start the watcher checking for updates
   backend_->LoadDirectoriesAsync();
@@ -157,6 +162,8 @@ void CollectionLibrary::ExitReceived() {
 }
 
 void CollectionLibrary::IncrementalScan() { watcher_->IncrementalScanAsync(); }
+
+void CollectionLibrary::RefreshPlaylist(const int playlist_id) { watcher_->ScanForPlaylistAsync(playlist_id); }
 
 void CollectionLibrary::FullScan() { watcher_->FullScanAsync(); }
 

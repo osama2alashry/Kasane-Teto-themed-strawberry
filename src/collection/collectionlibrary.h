@@ -85,6 +85,7 @@ class CollectionLibrary : public QObject {
   void Rescan(const SongList &songs);
 
   void IncrementalScan();
+  void RefreshPlaylist(const int playlist_id);
 
   void CurrentSongChanged(const Song &song);
   void Stopped();
@@ -95,6 +96,7 @@ class CollectionLibrary : public QObject {
   void SongsRatingChanged(const SongList &songs, const bool save_tags = false);
 
  Q_SIGNALS:
+  void PlaylistSongsReady(const SongList &songs, const int playlist_id, const bool completed);
   void Error(const QString &error);
   void ExitFinished();
 

@@ -576,6 +576,33 @@ MainWindow::MainWindow(Application *app,
   ui_->action_clear_playlist->setIcon(IconLoader::Load(u"edit-clear-list"_s));
   ui_->action_shuffle->setIcon(IconLoader::Load(u"media-playlist-shuffle"_s));
   ui_->action_remove_duplicates->setIcon(IconLoader::Load(u"list-remove"_s));
+  refresh_playlist_action_ = new QAction(IconLoader::Load(u"view-refresh"_s), tr("Refresh"), this);
+  refresh_playlist_action_->setObjectName(u"action_refresh_playlist"_s);
+  refresh_playlist_action_->setToolTip(tr("Scan the music collection and add missing songs without duplicates (F5)"));
+  refresh_playlist_action_->setShortcut(QKeySequence(Qt::Key_F5));
+  addAction(refresh_playlist_action_);
+  QObject::connect(refresh_playlist_action_, &QAction::triggered, this, [this]() {
+    if (refreshing_playlist_id_ != -1 || !playlists_loaded_) return;
+    refreshing_playlist_id_ = app_->playlist_manager()->current_id();
+    refresh_playlist_action_->setEnabled(false);
+    refresh_playlist_action_->setText(tr("Refreshing…"));
+    app_->collection()->RefreshPlaylist(refreshing_playlist_id_);
+  });
+  QObject::connect(&*app_->collection(), &CollectionLibrary::PlaylistSongsReady, this, [this](const SongList &songs, const int playlist_id, const bool completed) {
+    if (playlist_id != refreshing_playlist_id_) return;
+    Playlist *playlist = app_->playlist_manager()->playlist(playlist_id);
+    if (completed && playlist) {
+      SongList available;
+      for (const Song &song : songs) {
+        if (!song.unavailable() && song.url().isLocalFile() && QFile::exists(song.url().toLocalFile())) available << song;
+      }
+      playlist->RemoveDuplicateFiles();
+      playlist->InsertCollectionItems(available);
+    }
+    refreshing_playlist_id_ = -1;
+    refresh_playlist_action_->setText(tr("Refresh"));
+    refresh_playlist_action_->setEnabled(true);
+  });
   ui_->action_remove_unavailable->setIcon(IconLoader::Load(u"list-remove"_s));
   ui_->action_remove_from_playlist->setIcon(IconLoader::Load(u"list-remove"_s));
   ui_->action_save_all_playlists->setIcon(IconLoader::Load(u"document-save-all"_s));
@@ -681,6 +708,7 @@ MainWindow::MainWindow(Application *app,
   playlist_actions.load_playlist = ui_->action_load_playlist;
   playlist_actions.save_playlist = ui_->action_save_playlist;
   playlist_actions.clear_playlist = ui_->action_clear_playlist;
+  playlist_actions.refresh_playlist = refresh_playlist_action_;
   playlist_actions.next_playlist = ui_->action_next_playlist;
   // These aren't associated to a button but to the main window
   playlist_actions.previous_playlist = ui_->action_previous_playlist;

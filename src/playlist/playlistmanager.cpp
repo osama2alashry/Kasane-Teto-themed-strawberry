@@ -127,6 +127,7 @@ void PlaylistManager::PlaylistLoaded() {
   Playlist *playlist = qobject_cast<Playlist*>(sender());
   if (!playlist) return;
   QObject::disconnect(playlist, &Playlist::PlaylistLoaded, this, &PlaylistManager::PlaylistLoaded);
+  playlist->RemoveDuplicateFiles();
   --playlists_loading_;
   if (playlists_loading_ == 0) {
     Q_EMIT AllPlaylistsLoaded();

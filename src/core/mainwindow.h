@@ -310,6 +310,8 @@ class MainWindow : public QMainWindow, public PlatformInterface {
 
  private:
   Ui_MainWindow *ui_;
+  QAction *refresh_playlist_action_ = nullptr;
+  int refreshing_playlist_id_ = -1;
 #ifdef Q_OS_WIN32
   Windows7ThumbBar *thumbbar_;
 #endif

@@ -57,6 +57,7 @@ class PlaylistContainer : public QWidget {
     QAction *load_playlist = nullptr;
     QAction *save_playlist = nullptr;
     QAction *clear_playlist = nullptr;
+    QAction *refresh_playlist = nullptr;
     QAction *next_playlist = nullptr;
     QAction *previous_playlist = nullptr;
     QAction *last_playlist = nullptr;

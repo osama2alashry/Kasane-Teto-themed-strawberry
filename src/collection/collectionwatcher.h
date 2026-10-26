@@ -66,6 +66,7 @@ class CollectionWatcher : public QObject {
 
   void IncrementalScanAsync();
   void FullScanAsync();
+  void ScanForPlaylistAsync(const int playlist_id);
   void SetRescanPausedAsync(const bool pause);
   void ReloadSettingsAsync();
 
@@ -91,6 +92,7 @@ class CollectionWatcher : public QObject {
   void ExitFinished();
 
   void ScanStarted(const int task_id);
+  void PlaylistScanFinished(const int playlist_id, const bool completed);
 
  public Q_SLOTS:
   void AddDirectory(const CollectionDirectory &dir, const CollectionSubdirectoryList &subdirs);

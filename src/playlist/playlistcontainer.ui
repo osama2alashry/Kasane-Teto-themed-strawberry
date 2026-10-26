@@ -110,6 +110,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QToolButton" name="refresh">
+        <property name="toolButtonStyle">
+         <enum>Qt::ToolButtonTextBesideIcon</enum>
+        </property>
+        <property name="autoRaise">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QToolButton" name="undo">
         <property name="iconSize">
          <size>

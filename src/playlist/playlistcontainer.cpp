@@ -146,6 +146,7 @@ void PlaylistContainer::SetActions(const Actions &actions) {
   ui_->load->setDefaultAction(actions.load_playlist);
   ui_->save->setDefaultAction(actions.save_playlist);
   ui_->clear->setDefaultAction(actions.clear_playlist);
+  ui_->refresh->setDefaultAction(actions.refresh_playlist);
 
   ui_->tab_bar->SetActions(actions.new_playlist, actions.load_playlist);
 

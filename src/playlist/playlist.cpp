@@ -1033,14 +1033,7 @@ bool Playlist::dropMimeData(const QMimeData *data, Qt::DropAction action, const 
       items.reserve(source_rows.count());
       for (const int i : std::as_const(source_rows)) items << source_playlist->item_at(i)->Copy();
 
-      if (items.count() > kUndoItemLimit) {
-        // Too big to keep in the undo stack. Also clear the stack because it might have been invalidated.
-        InsertItemsWithoutUndo(items, row, false, false);
-        undo_stack_->clear();
-      }
-      else {
-        undo_stack_->push(new PlaylistUndoCommandInsertItems(this, items, row));
-      }
+      InsertItems(items, row);
 
       // Remove the items from the source playlist if it was a move event.
       // Remove from the end, so the rows that are not removed yet don't move.
@@ -1257,9 +1250,36 @@ void Playlist::InsertItems(const PlaylistItemPtrList &itemsIn, const int pos, co
     return;
   }
 
-  PlaylistItemPtrList items = itemsIn;
+  // A track is identified by its URL and CUE offset, not title or artist.
+  // Keep unidentified items, and keep distinct tracks in the same CUE file.
+  using TrackKey = QPair<QUrl, qint64>;
+  QHash<TrackKey, PlaylistItemPtr> known;
+  for (const PlaylistItemPtr &item : std::as_const(items_)) {
+    const Song song = item->EffectiveMetadata();
+    if (!song.url().isEmpty()) known.insert({song.url(), song.beginning_nanosec()}, item);
+  }
+  PlaylistItemPtrList items;
+  PlaylistItemPtrList requested;
+  QSet<const PlaylistItem*> requested_set;
+  for (const PlaylistItemPtr &item : itemsIn) {
+    const Song song = item->EffectiveMetadata();
+    const TrackKey key(song.url(), song.beginning_nanosec());
+    PlaylistItemPtr target = song.url().isEmpty() ? nullptr : known.value(key);
+    if (!target) {
+      target = item;
+      items << item;
+      if (!song.url().isEmpty()) known.insert(key, item);
+    }
+    if (!requested_set.contains(&*target)) {
+      requested << target;
+      requested_set.insert(&*target);
+    }
+  }
 
-  if (items.count() > kUndoItemLimit) {
+  if (items.isEmpty()) {
+    // No undo entry is needed when all requested tracks are already present.
+  }
+  else if (items.count() > kUndoItemLimit) {
     // Too big to keep in the undo stack. Also clear the stack because it might have been invalidated.
     InsertItemsWithoutUndo(items, pos, enqueue, enqueue_next);
     undo_stack_->clear();
@@ -1268,9 +1288,21 @@ void Playlist::InsertItems(const PlaylistItemPtrList &itemsIn, const int pos, co
     undo_stack_->push(new PlaylistUndoCommandInsertItems(this, items, pos, enqueue, enqueue_next));
   }
 
+  // Queue/play the existing item when requested again, instead of inserting
+  // a second copy. Resolve rows after sorting or insertion has completed.
+  if (enqueue || enqueue_next) {
+    QModelIndexList enqueue_indexes;
+    for (const PlaylistItemPtr &item : std::as_const(requested)) {
+      const int row = row_of(item);
+      if (row >= 0 && (enqueue_next || !queue_->ContainsSourceRow(row))) enqueue_indexes << index(row, 0);
+    }
+    if (enqueue_next) queue_->InsertFirst(enqueue_indexes);
+    else queue_->ToggleTracks(enqueue_indexes);
+  }
+
   // Look up the row after inserting, since the playlist might have been sorted.
   if (play_now) {
-    const int row = row_of(items.first());
+    const int row = row_of(requested.first());
     if (row != -1) {
       Q_EMIT PlayRequested(index(row, 0), AutoScroll::Maybe);
     }
@@ -2838,6 +2870,24 @@ struct SongSimilarEqual {
 };
 
 }  // namespace
+
+void Playlist::RemoveDuplicateFiles() {
+  QHash<QPair<QUrl, qint64>, int> seen;
+  QList<int> rows;
+  for (int row = 0; row < items_.count(); ++row) {
+    const Song song = items_[row]->EffectiveMetadata();
+    if (song.url().isEmpty()) continue;
+    const QPair<QUrl, qint64> key(song.url(), song.beginning_nanosec());
+    if (!seen.contains(key)) seen.insert(key, row);
+    else if (row == current_row() || (current_row() == -1 && row == last_played_row())) {
+      rows << seen.value(key);
+      seen[key] = row;
+    }
+    else rows << row;
+  }
+  std::sort(rows.begin(), rows.end());
+  if (!rows.isEmpty()) removeRows(rows);
+}
 
 void Playlist::RemoveDuplicateSongs() {
 

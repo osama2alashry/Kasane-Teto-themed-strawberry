@@ -150,6 +150,10 @@ class PlaylistTest : public ::testing::Test {
     playlist_.RemoveItemsNotInQueue();
   }
 
+  void RestoreLegacyItems(const PlaylistItemPtrList &items) {
+    playlist_.InsertItemsWithoutUndo(items, 0);
+  }
+
   // Blocks until the given playlist emits RestoreFinished, bounded by timeout_ms like WaitForEditingFinished().
   static void WaitForRestoreFinished(Playlist *playlist, const int timeout_ms = 5000) {
     QEventLoop loop;
@@ -202,6 +206,69 @@ class PlaylistTest : public ::testing::Test {
 };
 
 namespace {
+
+TEST_F(PlaylistTest, RefreshAddsOnlyMissingTracksAndPreservesPlayback) {
+  const auto first = MakeStreamItem(u"First"_s);
+  const auto second = MakeStreamItem(u"Second"_s);
+  playlist_.InsertItems({first});
+  playlist_.set_current_row(0);
+  playlist_.InsertItems({first->Copy(), second, second->Copy()});
+  ASSERT_EQ(2, playlist_.rowCount());
+  EXPECT_EQ(first, playlist_.current_item());
+  const int undo_count = playlist_.undo_stack()->count();
+  playlist_.InsertItems({first->Copy(), second->Copy()});
+  EXPECT_EQ(2, playlist_.rowCount());
+  EXPECT_EQ(undo_count, playlist_.undo_stack()->count());
+  EXPECT_EQ(first, playlist_.current_item());
+  playlist_.undo_stack()->undo();
+  EXPECT_EQ(1, playlist_.rowCount());
+  playlist_.undo_stack()->redo();
+  EXPECT_EQ(2, playlist_.rowCount());
+}
+
+TEST_F(PlaylistTest, ReaddingTrackPlaysAndQueuesExistingItem) {
+  const auto first = MakeStreamItem(u"First"_s);
+  playlist_.InsertItems({first});
+  int requested_row = -1;
+  QObject::connect(&playlist_, &Playlist::PlayRequested, &playlist_, [&requested_row](const QModelIndex &idx) { requested_row = idx.row(); });
+  playlist_.InsertItems({first->Copy()}, -1, true, true);
+  EXPECT_EQ(1, playlist_.rowCount());
+  EXPECT_EQ(0, requested_row);
+  EXPECT_EQ(1, playlist_.queue()->rowCount());
+  playlist_.InsertItems({first->Copy()}, -1, false, true);
+  EXPECT_EQ(1, playlist_.queue()->rowCount());
+  const auto second = MakeStreamItem(u"Second"_s);
+  playlist_.InsertItems({second}, -1, false, false, true);
+  EXPECT_EQ(1, playlist_.queue()->PeekNext());
+  playlist_.InsertItems({first->Copy()}, -1, false, false, true);
+  EXPECT_EQ(0, playlist_.queue()->PeekNext());
+  EXPECT_EQ(2, playlist_.rowCount());
+}
+
+TEST_F(PlaylistTest, DuplicateCheckKeepsCueTracksAndDifferentFilesWithSameTitle) {
+  Song song(Song::Source::LocalFile);
+  song.Init(u"Same title"_s, u"Artist"_s, u"Album"_s, 123);
+  song.set_url(QUrl(u"file:///music/album.flac"_s));
+  song.set_beginning_nanosec(0);
+  const auto first = PlaylistItem::NewFromSong(song);
+  song.set_beginning_nanosec(123000000000LL);
+  const auto cue_second = PlaylistItem::NewFromSong(song);
+  song.set_url(QUrl(u"file:///music/another.flac"_s));
+  const auto other_file = PlaylistItem::NewFromSong(song);
+  playlist_.InsertItems({first, cue_second, other_file, first->Copy()});
+  EXPECT_EQ(3, playlist_.rowCount());
+}
+
+TEST_F(PlaylistTest, CleaningExistingDuplicatesKeepsPlayingInstance) {
+  const auto first = MakeStreamItem(u"First"_s);
+  const auto playing = first->Copy();
+  RestoreLegacyItems({first, MakeStreamItem(u"Second"_s), playing});
+  playlist_.set_current_row(2);
+  playlist_.RemoveDuplicateFiles();
+  EXPECT_EQ(2, playlist_.rowCount());
+  EXPECT_EQ(playing, playlist_.current_item());
+  EXPECT_EQ(1, playlist_.current_row());
+}
 
 TEST_F(PlaylistTest, Basic) {
   EXPECT_EQ(0, playlist_.rowCount(QModelIndex()));
