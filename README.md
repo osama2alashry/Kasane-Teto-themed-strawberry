@@ -1,143 +1,81 @@
-# :strawberry: Strawberry Music Player [![Build Status](https://github.com/strawberrymusicplayer/strawberry/actions/workflows/build.yaml/badge.svg?branch=master)](https://github.com/strawberrymusicplayer/strawberry/actions)
-[![Sponsor](https://img.shields.io/badge/-Sponsor-green?logo=github)](https://github.com/sponsors/jonaski)
-[![Patreon](https://img.shields.io/badge/patreon-donate-green.svg)](https://patreon.com/jonaskvinge)
-[![PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/jonaskvinge)
+# Kasane Teto themed strawberry
 
-Strawberry is a **music player and music collection organizer**, originally forked from *Clementine* in 2018.
-It’s written in **C++ using the Qt framework**, designed for **audiophiles and music collectors**.
+A personal fork of [Strawberry Music Player](https://github.com/strawberrymusicplayer/strawberry), combining a Kasane Teto inspired appearance with a native **Refresh** button and playlist duplicate prevention.
 
-![Screenshot of Strawberry Music Player](https://raw.githubusercontent.com/strawberrymusicplayer/strawberry/master/data/screenshot/screenshot.png)
+**Version:** Strawberry **1.2.31**, Kasane Teto edition (customizations developed 2026-10-24; published 2026-10-26). Based on upstream commit `19d8c0b8ce5bae37e73c41b3552d3502217b3175`. The application's internal version remains 1.2.31.
 
----
+![Kasane Teto themed Strawberry UI, showing the Refresh button and character background](docs/images/kasane-teto-ui.png)
 
-## :globe_with_meridians: Resources
+Screenshot captured from the running Linux application on 2026-10-26.
 
-- **Website:** https://www.strawberrymusicplayer.org
-- **Wiki:** https://wiki.strawberrymusicplayer.org
-- **Forum:** https://forum.strawberrymusicplayer.org
-- **GitHub:** https://github.com/strawberrymusicplayer/strawberry
-- **Latest builds:** https://builds.strawberrymusicplayer.org
-- **openSUSE Build Service:**
-  - Stable: https://build.opensuse.org/package/show/home:jonaski:strawberry/strawberry
-  - Unstable: https://build.opensuse.org/package/show/home:jonaski:strawberry-dev/strawberry
-- **Ubuntu PPAs:**
-  - Stable: https://launchpad.net/~jonaski/+archive/ubuntu/strawberry
-  - Unstable: https://launchpad.net/~jonaski/+archive/ubuntu/strawberry-unstable
-- **Translations:** https://crowdin.com/project/strawberrymusicplayer
+## What's different
 
----
+### Refresh button and F5 shortcut
 
-## :warning: Opening an Issue
+The playlist toolbar has a visible **Refresh** button beside the existing playlist controls. Press it or **F5** to scan every configured Collection folder, including nested folders, and append available local tracks missing from the selected playlist. This synchronizes the playlist with the whole configured collection, rather than only the currently selected album or folder.
 
-Before creating a new GitHub issue:
+The action waits for the scan's database updates before reading the collection. During a scan it displays **Refreshing…** and disables itself to prevent overlapping requests. Existing playlist order and the playing track are preserved; repeated refreshes do not add copies. It does not remove unavailable tracks or delete or retag music files.
 
-1. **Read the [FAQ](https://wiki.strawberrymusicplayer.org/wiki/FAQ)**.
-2. **Search existing issues** to avoid duplicates. If one already exists, comment there with any additional information.
-3. **Use the [forum](https://forum.strawberrymusicplayer.org/)** for technical problems, discussions or feature suggestions — it’s better suited for back-and-forth conversation.
-4. **Feature requests are not accepted on GitHub.** Issues created for feature requests will be closed. You can still discuss ideas on the forum.
-5. **Flatpak users:** We do **not** maintain the Flatpak package. Report Flatpak-specific issues via [Flatpak support](https://flatpak.org/about/).
+### Duplicate prevention
 
----
+- Tracks are identified by URL plus CUE offset, preserving separate CUE tracks and different files with identical titles.
+- Adding the same track again reuses its existing playlist entry for play and queue requests.
+- Existing duplicate references are removed when a playlist loads and when Refresh completes, retaining the current or last-played instance where applicable.
+- Cross-playlist additions also use the duplicate checks. Intentionally repeating the same URL/CUE track in one playlist is therefore no longer supported through normal insertion.
 
-## :moneybag: Sponsoring
+### Kasane Teto theme
 
-Strawberry is **free software released under the GPL**.
-If you enjoy using it, please consider **supporting development** through sponsorship or donation.
+The theme uses Strawberry's native appearance settings, the Fusion widget style, a per-application KDE palette, Jost typography, a translucent Teto playlist background, and a custom application icon theme. The palette combines pale gray `#D4D9DF`, light gray `#E1E4E9`, near-black `#1D1D1D`, and raspberry `#D5214B`.
 
-**Sponsorship options:**
-1. [Patreon](https://www.patreon.com/jonaskvinge)
-2. [GitHub](https://github.com/sponsors/jonaski)
-3. [Ko-fi](https://ko-fi.com/jonaskvinge)
-4. [PayPal](https://paypal.me/jonaskvinge)
+The theme assets and a portable setup script are included under [`teto/`](teto/). The setup creates a separate Strawberry profile and keeps the native application layout. Appearance can still be adjusted in Strawberry's settings.
 
-Supporting open-source developers helps ensure continued maintenance and improvements.
+## Build and apply the theme on Linux
 
----
+Install the [upstream build dependencies](README.upstream.md#gear-requirements), plus Ninja. For the full theme, install your distribution's **Qt 6 KDE platform theme integration**, **Breeze icons**, Python 3, and fontconfig. Package names vary by distribution. Without KDE integration, Strawberry's own palette and background still apply, but some font and icon styling may differ.
 
-## :white_check_mark: Features
+```sh
+git clone https://github.com/osama2alashry/Kasane-Teto-themed-strawberry.git
+cd Kasane-Teto-themed-strawberry
+sh teto/build.sh
+python3 teto/install-theme.py --binary "$HOME/.local/share/strawberry-teto/app/bin/strawberry"
+"$HOME/.local/share/strawberry-teto/bin/strawberry-teto"
+```
 
-- Play and organize your music collection
-- Support for WAV, FLAC, Ogg FLAC, WavPack, Ogg Vorbis, Opus, Ogg Speex, MPC, TrueAudio, AIFF, MP4/AAC, ALAC, MP3, ASF, Monkey’s Audio, and DSD (DSF/DSDIFF)
-- Bit-perfect playback on Linux
-- MPRIS2 / D-Bus remote control on Linux
-- Native desktop notifications
-- Advanced playlist management
-- Smart and dynamic playlists
-- Audio analyzer, equalizer, moodbar, and waveform seek bar
-- Volume normalization with ReplayGain and EBU R128 loudness analysis
-- Editing tags, and fetching missing tags via acoustic fingerprinting using [AcoustID](https://acoustid.org/) and [MusicBrainz](https://musicbrainz.org/)
-- Album cover art from: [Last.fm](https://www.last.fm/), [MusicBrainz](https://musicbrainz.org/), [Discogs](https://www.discogs.com/), [Musixmatch](https://www.musixmatch.com/), [Deezer](https://www.deezer.com/), [Tidal](https://www.tidal.com/), [Qobuz](https://www.qobuz.com/), [Spotify](https://www.spotify.com/)
-- Lyrics from: [Genius](https://genius.com/), [Musixmatch](https://www.musixmatch.com/), [lyrics.ovh](https://lyrics.ovh/), [songlyrics](https://www.songlyrics.com/), [azlyrics](https://www.azlyrics.com/), [elyrics](https://www.elyrics.net/), [letras](https://www.letras.mus.br) and [lrclib.net](https://lrclib.net/)
-- Audio format conversion (transcoding) to MP3, AAC, FLAC, Ogg Vorbis, Opus, Speex, WavPack, and ASF
-- Music transfer to USB, MTP and iPod devices
-- Scrobbling to [Last.fm](https://www.last.fm/), [ListenBrainz](https://listenbrainz.org/), and Subsonic
-- Global keyboard shortcuts (Linux, macOS, and Windows)
-- Discord Rich Presence
-- Audio CD playback
-- Internet radio from [Radio Paradise](https://radioparadise.com/), [SomaFM](https://somafm.com/), [Radio Browser](https://www.radio-browser.info/), and custom streams
-- Streaming from Subsonic-compatible servers
-- Unofficial Tidal, Spotify, and Qobuz integration
+Close other Strawberry instances before launching the themed profile, then add your folders in **Settings > Collection**. Use **Refresh / F5** to populate the current playlist. No personal library or service account is included.
 
----
+The build helper uses Release mode and disables optional iPod support, streaming tag reader, and translations, matching the original local build. Override `TETO_BUILD_DIR`, `TETO_INSTALL_PREFIX`, or `TETO_BUILD_JOBS` as needed; use upstream CMake options for a different feature set. The theme installer also accepts `--prefix` and `--binary` for other installation locations. Reinstalling preserves the profile's existing settings and service logins.
 
-:white_check_mark: Tested on **Linux**, **OpenBSD**, **FreeBSD**, **macOS**, and **Windows**.
+The installer copies Jost into the user's font directory and creates the theme profile under `~/.local/share/strawberry-teto/`; it does not change the desktop-wide palette. Building alone does not apply the theme. The published repository contains source and assets, not a prebuilt binary or Flatpak package. The local installation's ignored service credentials header is not published; streaming service setup depends on your own configuration and upstream build options.
 
-> **Note:** macOS and Windows releases are currently **available to sponsors only**.
-> A monthly sponsorship via [Patreon](https://www.patreon.com/jonaskvinge) grants direct access to new releases.
+## Optional Qobuz saving helper
 
----
+The original local customization also includes a separate MPRIS watcher, [`teto/qobuz-save.py`](teto/qobuz-save.py). It saves complete Qobuz tracks as playback starts, adds metadata and album artwork without re-encoding the audio, rejects incomplete downloads and previews, and skips previously saved files. It does not replace streaming playlist entries; local copies appear in Collection after their destination is scanned.
 
-## :gear: Requirements
+This helper is **opt-in** in the portable launcher. It needs Python `requests`, PyGObject/Gio, FFmpeg/ffprobe, and an authenticated Strawberry Qobuz configuration with the required application credentials. No credentials are bundled. To enable it for a launch:
 
-To build Strawberry from source, you’ll need:
+```sh
+STRAWBERRY_TETO_QOBUZ_SAVE=1 "$HOME/.local/share/strawberry-teto/bin/strawberry-teto"
+```
 
-**Dependencies:**
-- [CMake 3.13 or higher](https://cmake.org/)
-- C/C++ compiler ([GCC](https://gcc.gnu.org/), [Clang](https://clang.llvm.org/), or [MSVC](https://visualstudio.microsoft.com/vs/features/cplusplus/))
-- [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/) or [pkgconf](https://github.com/pkgconf/pkgconf)
-- [Boost](https://www.boost.org/)
-- [GLib](https://developer.gnome.org/glib/)
-- [OpenSSL](https://www.openssl.org/)
-- [Qt 6.4 or higher](https://www.qt.io/) (Core, Concurrent, Gui, Widgets, Network, SQL, D-Bus)
-- [SQLite 3.9 or higher](https://www.sqlite.org)
-- [ALSA (Linux only)](https://www.alsa-project.org/)
-- [GStreamer](https://gstreamer.freedesktop.org/)
-- [TagLib 1.12 or higher](https://www.taglib.org/)
-- [ICU](https://unicode-org.github.io/icu/)
-- [uchardet](https://www.freedesktop.org/wiki/Software/uchardet/)
-- [KDSingleApplication 1.1.0 or higher](https://github.com/KDAB/KDSingleApplication)
+The default destination is `~/Music/Qobuz`; add that folder to Collection. Override `STRAWBERRY_TETO_SAVE_DIR`, `STRAWBERRY_TETO_SAVE_STATE`, or `STRAWBERRY_TETO_PROFILE` as needed. The helper offers `--disable`, `--enable`, `--current`, and `--backfill-covers`; see `python3 teto/qobuz-save.py --help`. Queued saves finish after the player closes. Save only content you have permission to retain.
 
-**Dependencies for optional features:**
-- Fingerprinting & tagging: [Chromaprint](https://acoustid.org/chromaprint)
-- Fast Spectrum Moodbar: [FFTW3](http://www.fftw.org/)
-- PulseAudio integration: [PulseAudio](https://www.freedesktop.org/wiki/Software/PulseAudio/)
-- Audio CD support: [libcdio](https://www.gnu.org/software/libcdio/)
-- MTP devices: [libmtp](http://libmtp.sourceforge.net/)
-- iPod Classic: [libgpod](http://www.gtkpod.org/libgpod/)
-- EBU R128 normalization: [libebur128](https://github.com/jiixyj/libebur128)
-- Secure password storage using libsecret on Linux/BSD: [libsecret](https://gnome.pages.gitlab.gnome.org/libsecret/)
+## Validation and scope
 
-Also install GStreamer plugins **base**, **good**, and optionally **bad**, **ugly** and **libav** for full codec support.
+- **60 playlist tests passed** when rerun for publication on 2026-10-26, including refresh deduplication, playback preservation, queue reuse, CUE handling, and legacy duplicate cleanup.
+- Original isolated UI validation on 2026-10-24 covered the visible button, a new nested WAV, three refreshes, repeated folder addition, and preservation of the current track.
+- The original local build verified Linux MP3/M4A playback. Theme setup targets Linux; macOS and Windows have not been validated for this customization.
 
----
+With upstream's test dependencies installed, build and run the playlist tests:
 
-## :wrench: Build from Source
+```sh
+cmake --build build --target playlist_test
+QT_QPA_PLATFORM=offscreen ./build/tests/playlist_test
+```
 
-**Get the code:**
+## Credits and license
 
-    git clone --recursive https://github.com/strawberrymusicplayer/strawberry
+Maintained by [osama2alashry](https://github.com/osama2alashry), with **OpenAI Codex** credited as a commit coauthor. Thanks to Jonas Kvinge and all Strawberry contributors for the player this fork builds on.
 
-**Build and install:**
+Strawberry source is licensed under **GNU GPL v3**; see [COPYING](COPYING). Jost includes its SIL Open Font License. Character artwork and marks retain their owners' rights. See [asset sources and credits](teto/CREDITS.md) for TWINDRILL, the website illustration, and icon provenance. This is an unofficial fan customization.
 
-    cd strawberry
-    cmake -S . -B build
-    cmake --build build --parallel $(nproc)
-    sudo cmake --install build
-
-For building on Windows with Visual Studio 2022/2026, see: :point_right: https://github.com/strawberrymusicplayer/strawberry-msvc-build-tools
-
----
-
-## :package: Packaging status
-
-[![Packaging status](https://repology.org/badge/vertical-allrepos/strawberry.svg?columns=3&header=Strawberry&exclude_unsupported=1)](https://repology.org/metapackage/strawberry/versions)
+The original project overview, features, dependencies, and support links are preserved in [README.upstream.md](README.upstream.md).
